@@ -51,6 +51,11 @@
 <main>
   <section id="tab-summary">
     <div class="cards" id="cards"></div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="label">全体ロードマップ</div>
+      <div id="roadmap" style="margin-top:10px"></div>
+      <div id="roadmap-total" style="margin-top:10px; font-size:13px; color:#444"></div>
+    </div>
     <div class="card">
       <div class="label">カバレッジ</div>
       <div style="margin-top:8px">帳票: <b id="cov-f"></b> <div class="bar"><div id="bar-f"></div></div></div>
@@ -212,6 +217,82 @@ document.querySelectorAll("#tab-muni th[data-k]").forEach(th => {
 document.getElementById("q-f").oninput = renderForms;
 document.getElementById("q-m").oninput = renderMuni;
 
+// Phase roadmap: name, key regex to detect done, estimated minutes
+const PHASES = [
+  { key: "C0",  name: "Phase C0: seed URL拡充 (DDG探索)",          estMin: 45, doneRe: /Phase C0完了/,  progRe: /C0 進捗 (\d+)\/(\d+)/ },
+  { key: "C1",  name: "Phase C1: 拡充seedで再クロール",             estMin: 60, doneRe: /Phase C1完了/,  progRe: /C1 進捗 (\d+)\/(\d+)/ },
+  { key: "F",   name: "content_filter 再適用",                      estMin: 5,  doneRe: /filter再適用完了/, progRe: null },
+  { key: "CL",  name: "classify_place 再適用 (マスタ照合)",         estMin: 10, doneRe: /classify再適用完了/, progRe: null },
+  { key: "D",   name: "ダッシュボードrebuild + push",               estMin: 2,  doneRe: /ダッシュボード再生成完了/, progRe: null },
+];
+
+function findMatch(items, re) {
+  for (const it of items) { const m = (it.msg||"").match(re); if (m) return { it, m }; }
+  return null;
+}
+
+function fmtMin(mins) {
+  mins = Math.max(0, Math.round(mins));
+  if (mins < 60) return mins + "分";
+  const h = Math.floor(mins/60), mm = mins%60;
+  return mm ? `${h}時間${mm}分` : `${h}時間`;
+}
+
+function updateRoadmap(items) {
+  const el = document.getElementById("roadmap");
+  if (!el) return;
+  let activeIdx = -1;
+  const status = PHASES.map((p, i) => {
+    const done = findMatch(items, p.doneRe);
+    if (done) return { state: "done", remainMin: 0 };
+    if (p.progRe) {
+      // find first & latest progress entries
+      let first = null, latest = null;
+      for (const it of items) {
+        const m = (it.msg||"").match(p.progRe);
+        if (m) {
+          const e = { n:+m[1], total:+m[2], ts:new Date(it.ts.replace(" ","T")+":00").getTime() };
+          if (!first) first = e; latest = e;
+        }
+      }
+      if (latest) {
+        if (activeIdx < 0) activeIdx = i;
+        let remainMin = p.estMin;
+        if (first && latest.n > first.n) {
+          const rate = (latest.ts - first.ts) / (latest.n - first.n);
+          remainMin = ((latest.total - latest.n) * rate) / 60000;
+        }
+        return { state: "running", remainMin, n: latest.n, total: latest.total };
+      }
+    }
+    return { state: "pending", remainMin: p.estMin };
+  });
+  if (activeIdx < 0) activeIdx = status.findIndex(s => s.state !== "done");
+
+  el.innerHTML = PHASES.map((p, i) => {
+    const s = status[i];
+    const icon = s.state === "done" ? "✅" : s.state === "running" ? "⏳" : "⏸";
+    const color = s.state === "done" ? "#28a745" : s.state === "running" ? "#e6a700" : "#999";
+    const sub = s.state === "running"
+      ? `実行中 ${s.n}/${s.total} · 残り約 ${fmtMin(s.remainMin)}`
+      : s.state === "done" ? "完了"
+      : `予定 ${fmtMin(s.remainMin)}`;
+    return `<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #eee">
+      <div style="font-size:18px; width:24px">${icon}</div>
+      <div style="flex:1">
+        <div style="font-weight:${s.state==='running'?'bold':'normal'}">${p.name}</div>
+        <div style="font-size:11px; color:${color}">${sub}</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  const totalRemain = status.reduce((a, s) => a + s.remainMin, 0);
+  const doneCount = status.filter(s => s.state === "done").length;
+  const eta = new Date(Date.now() + totalRemain*60000);
+  document.getElementById("roadmap-total").innerHTML =
+    `完了: <b>${doneCount}/${PHASES.length}</b> · 残り合計 <b>${fmtMin(totalRemain)}</b> · 完了予定 <b>${eta.toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</b>`;
+}
+
 function updateETA(items) {
   const el = document.getElementById("eta");
   // find latest C0 進捗 N/M line
@@ -261,6 +342,7 @@ async function loadNotes() {
     const txt = await r.text();
     const items = txt.trim().split("\n").filter(Boolean).map(JSON.parse);
     updateETA(items);
+    updateRoadmap(items);
     items.reverse();
     document.getElementById("log-list").innerHTML = items.map(x =>
       `<div style="padding:6px 0; border-bottom:1px solid #eee">
