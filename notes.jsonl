@@ -17,3 +17,5 @@
 {"ts": "2026-04-22 01:20", "level": "running", "msg": "C0 進捗 65/79 / 累計候補URL 10 / エラー 48"}
 {"ts": "2026-04-22 01:21", "level": "running", "msg": "C0 進捗 70/79 / 累計候補URL 10 / エラー 53"}
 {"ts": "2026-04-22 01:22", "level": "running", "msg": "C0 進捗 75/79 / 累計候補URL 10 / エラー 58"}
+{"ts": "2026-04-22 01:23", "level": "running", "msg": "C0 進捗 79/79 / 累計候補URL 10 / エラー 62"}
+{"ts": "2026-04-22 01:23", "level": "done", "msg": "Phase C0完了: 1/79 自治体で候補URL発見、合計 10 URL / → seeds_enriched.json"}
