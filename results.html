@@ -45,7 +45,7 @@
   <button data-tab="summary" class="active">サマリー</button>
   <button data-tab="forms">帳票別（210）</button>
   <button data-tab="muni">自治体別（113）</button>
-  <button data-tab="log">作業ログ</button>
+  <button data-tab="log">ログ</button>
 </nav>
 <main>
   <section id="tab-summary">
@@ -71,13 +71,6 @@
     </table>
   </section>
 
-  <section id="tab-log" class="hidden">
-    <div class="card">
-      <div class="label">進捗ログ（Claude→ユーザー通信）</div>
-      <div id="log-list" style="margin-top:10px; font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.6;"></div>
-    </div>
-  </section>
-
   <section id="tab-muni" class="hidden">
     <div class="search"><input id="q-m" placeholder="自治体名で絞り込み"></div>
     <table>
@@ -95,17 +88,75 @@
       <tbody id="tb-m"></tbody>
     </table>
   </section>
+
+  <section id="tab-log" class="hidden">
+    <div class="search">
+      <select id="log-level" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px">
+        <option value="">すべて</option>
+        <option value="error">error のみ</option>
+        <option value="warn">warn 以上</option>
+        <option value="done">done</option>
+        <option value="info">info</option>
+      </select>
+      <input id="q-l" placeholder="メッセージで絞り込み" style="margin-left:8px">
+    </div>
+    <table>
+      <thead><tr>
+        <th style="width:140px">日時</th>
+        <th style="width:80px">レベル</th>
+        <th>メッセージ</th>
+      </tr></thead>
+      <tbody id="tb-l"></tbody>
+    </table>
+  </section>
 </main>
 
 <script>
 let DATA = null;
+let NOTES = [];
 let sortF = {k:"total", dir:-1};
 let sortM = {k:"files_downloaded", dir:-1};
+const LEVEL_ORDER = {error:3, warn:2, done:1, info:0};
+const LEVEL_COLOR = {error:"error", warn:"running", done:"done", info:"pending"};
 
 async function load() {
   const r = await fetch("results.json?" + Date.now());
   DATA = await r.json();
   render();
+  loadNotes();
+}
+
+async function loadNotes() {
+  try {
+    const r = await fetch("notes.jsonl?" + Date.now());
+    const text = await r.text();
+    NOTES = text.trim().split("\n").filter(Boolean).map(l => {
+      try { return JSON.parse(l); } catch { return null; }
+    }).filter(Boolean).reverse();
+    renderLog();
+  } catch(e) {}
+}
+
+function renderLog() {
+  const lv = document.getElementById("log-level").value;
+  const q = document.getElementById("q-l").value.toLowerCase();
+  const min = lv && LEVEL_ORDER[lv] !== undefined ? LEVEL_ORDER[lv] : -1;
+  const rows = NOTES.filter(n => {
+    const l = (n.level || "info").toLowerCase();
+    if (lv === "error" && l !== "error") return false;
+    if (lv === "done" && l !== "done") return false;
+    if (lv === "info" && l !== "info") return false;
+    if (lv === "warn" && (LEVEL_ORDER[l] ?? -1) < 2) return false;
+    if (q && !(n.msg || "").toLowerCase().includes(q)) return false;
+    return true;
+  }).slice(0, 300);
+  document.getElementById("tb-l").innerHTML = rows.map(n => {
+    const l = (n.level || "info").toLowerCase();
+    const cls = LEVEL_COLOR[l] || "pending";
+    return `<tr><td class="muted">${esc(n.ts||"")}</td>
+      <td><span class="tag ${cls}">${esc(l)}</span></td>
+      <td>${esc(n.msg||"")}</td></tr>`;
+  }).join("");
 }
 
 function render() {
@@ -189,7 +240,7 @@ document.querySelectorAll("nav button").forEach(b => {
   b.onclick = () => {
     document.querySelectorAll("nav button").forEach(x => x.classList.remove("active"));
     b.classList.add("active");
-    ["summary","forms","muni"].forEach(t =>
+    ["summary","forms","muni","log"].forEach(t =>
       document.getElementById("tab-"+t).classList.toggle("hidden", t !== b.dataset.tab));
   };
 });
@@ -210,25 +261,10 @@ document.querySelectorAll("#tab-muni th[data-k]").forEach(th => {
 });
 document.getElementById("q-f").oninput = renderForms;
 document.getElementById("q-m").oninput = renderMuni;
-
-async function loadNotes() {
-  try {
-    const r = await fetch("notes.jsonl?" + Date.now());
-    if (!r.ok) return;
-    const txt = await r.text();
-    const items = txt.trim().split("\n").filter(Boolean).map(JSON.parse);
-    items.reverse();
-    document.getElementById("log-list").innerHTML = items.map(x =>
-      `<div style="padding:6px 0; border-bottom:1px solid #eee">
-        <span class="muted">${x.ts}</span>
-        <span class="tag ${x.level||'done'}" style="margin-left:6px">${x.level||'info'}</span>
-        <div style="margin-top:3px; white-space: pre-wrap">${esc(x.msg)}</div>
-      </div>`).join("") || '<div class="muted">(ログなし)</div>';
-  } catch(e) {}
-}
+document.getElementById("q-l").oninput = renderLog;
+document.getElementById("log-level").onchange = renderLog;
 
 load();
-loadNotes();
 setInterval(load, 30000);
 setInterval(loadNotes, 15000);
 </script>

@@ -19,3 +19,13 @@
 {"ts": "2026-04-22 01:22", "level": "running", "msg": "C0 進捗 75/79 / 累計候補URL 10 / エラー 58"}
 {"ts": "2026-04-22 01:23", "level": "running", "msg": "C0 進捗 79/79 / 累計候補URL 10 / エラー 62"}
 {"ts": "2026-04-22 01:23", "level": "done", "msg": "Phase C0完了: 1/79 自治体で候補URL発見、合計 10 URL / → seeds_enriched.json"}
+{"ts":"2026-04-22 01:30","level":"done","msg":"Phase E0完了: 帳票リスト_newest.xlsx 解析 / forms_master_v3.csv (210帳票) + form_hierarchy.json (12事業所, 1351帳票) + form_tags.json (1156帳票) 生成"}
+{"ts": "2026-04-22 02:08", "level": "done", "msg": "Phase E1完了: output_市町村-県/ 構築 / 分類済 297 / 未マッチ 230 / 欠損 0"}
+{"ts": "2026-04-22 02:11", "level": "done", "msg": "Phase E2完了: output_帳票リスト_new/ 構築 / 共通帳票 233件 / 事業所別 979件 / 配置ファイル 294件"}
+{"ts": "2026-04-22 02:11", "level": "done", "msg": "Phase E3完了: files_index.jsonl (294件) + 両レポート生成 / 帳票15種 × 事業所24種"}
+{"ts":"2026-04-22 02:15","level":"done","msg":"クリーンアップ完了: 旧 output_new/ を削除（E1/E2/E3 で置換済のため不要）"}
+{"ts": "2026-04-22 02:22", "level": "done", "msg": "Phase E1完了: output_市町村-県/ 構築 / スケルトン 23730 / 分類済 297 / 未マッチ 230 / 欠損 0"}
+{"ts": "2026-04-22 02:22", "level": "done", "msg": "Phase E2完了: output_帳票リスト_new/ 構築 / 共通帳票 233件 / 事業所別 979件 / マスタ補完 48件 / 配置ファイル 299件"}
+{"ts": "2026-04-22 02:22", "level": "done", "msg": "Phase E3完了: files_index.jsonl (299件) + 両レポート生成 / 帳票18種 × 事業所24種"}
+{"ts": "2026-04-22 02:23", "level": "done", "msg": "Phase E2完了: output_帳票リスト_new/ 構築 / 共通帳票 233件 / 事業所別 979件 / マスタ補完 48件 / 配置ファイル 299件"}
+{"ts": "2026-04-22 02:24", "level": "done", "msg": "Phase E3完了: files_index.jsonl (299件) + 両レポート生成 / 帳票18種 × 事業所24種"}
