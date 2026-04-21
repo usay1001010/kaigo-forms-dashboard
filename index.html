@@ -217,13 +217,44 @@ document.querySelectorAll("#tab-muni th[data-k]").forEach(th => {
 document.getElementById("q-f").oninput = renderForms;
 document.getElementById("q-m").oninput = renderMuni;
 
-// Phase roadmap: name, key regex to detect done, estimated minutes
+// Phase roadmap: 2-stage (小スコープ検証 → 目視OK → 全国展開)
 const PHASES = [
-  { key: "C0",  name: "Phase C0: seed URL拡充 (DDG探索)",          estMin: 45, doneRe: /Phase C0完了/,  progRe: /C0 進捗 (\d+)\/(\d+)/ },
-  { key: "C1",  name: "Phase C1: 拡充seedで再クロール",             estMin: 60, doneRe: /Phase C1完了/,  progRe: /C1 進捗 (\d+)\/(\d+)/ },
-  { key: "F",   name: "content_filter 再適用",                      estMin: 5,  doneRe: /filter再適用完了/, progRe: null },
-  { key: "CL",  name: "classify_place 再適用 (マスタ照合)",         estMin: 10, doneRe: /classify再適用完了/, progRe: null },
-  { key: "D",   name: "ダッシュボードrebuild + push",               estMin: 2,  doneRe: /ダッシュボード再生成完了/, progRe: null },
+  // --- Stage 1: 113自治体で精度検証 ---
+  { key:"C0",   stage:"小スコープ (113自治体)", name:"Phase C0: seed URL拡充 (79ゼロ件自治体にDDG探索)",
+    detail:"各ゼロ件自治体に site:domain 介護保険 様式 で3クエリ叩き候補URL収集 → seeds_enriched.json",
+    estMin:45, doneRe:/Phase C0完了/, progRe:/C0 進捗 (\d+)\/(\d+)/ },
+  { key:"C1",   stage:"小スコープ (113自治体)", name:"Phase C1: 拡充seedで再クロール",
+    detail:"crawler_v2.py を seeds_enriched.json のURLから再実行。BFS depth2 + 精度フィルタ",
+    estMin:60, doneRe:/Phase C1完了/, progRe:/C1 進捗 (\d+)\/(\d+)/ },
+  { key:"F",    stage:"小スコープ (113自治体)", name:"content_filter 再適用",
+    detail:"除外語リスト+帳票マスタ部分一致+キーワードスコア(th=3) でノイズ除去",
+    estMin:5, doneRe:/filter再適用完了/, progRe:null },
+  { key:"CL",   stage:"小スコープ (113自治体)", name:"classify_place 再適用 (マスタ照合)",
+    detail:"210帳票マスタへのマッチング・自治体×帳票マトリクス更新",
+    estMin:10, doneRe:/classify再適用完了/, progRe:null },
+  { key:"D",    stage:"小スコープ (113自治体)", name:"ダッシュボードrebuild + push",
+    detail:"build_dashboard_data.py → results.json → GitHub Pages",
+    estMin:2, doneRe:/ダッシュボード再生成完了/, progRe:null },
+  // --- Gate: 目視チェック ---
+  { key:"GATE", stage:"判断ゲート", name:"🧑‍⚖️ 目視レビュー (ユーザー確認)",
+    detail:"113自治体の結果をダッシュボードで確認。カバレッジ・精度がOKなら次フェーズへGO。NGならフィルタ調整ループ",
+    estMin:60, doneRe:/目視レビューOK/, progRe:null, manual:true },
+  // --- Stage 2: 全国1,741市町村 ---
+  { key:"F0",   stage:"全国展開 (1,741市町村)", name:"Phase F0: 全国市町村ターゲット生成",
+    detail:"総務省の市区町村コード一覧から1,741件の {id,name,domain} を生成。都道府県は既存流用",
+    estMin:180, doneRe:/Phase F0完了/, progRe:/F0 進捗 (\d+)\/(\d+)/ },
+  { key:"F1",   stage:"全国展開 (1,741市町村)", name:"Phase F1: 全国seed収集 (DDG一括)",
+    detail:"1,741市町村に C0と同じ DDG探索を適用。レート制限2.5秒/req → 約2-3時間/バッチ × 並列3",
+    estMin:360, doneRe:/Phase F1完了/, progRe:/F1 進捗 (\d+)\/(\d+)/ },
+  { key:"F2",   stage:"全国展開 (1,741市町村)", name:"Phase F2: 全国クロール実行",
+    detail:"crawler_v2.py を1,741市町村で並列実行 (8ワーカー)。1自治体あたり平均3-5分 → 約1週間",
+    estMin:10080, doneRe:/Phase F2完了/, progRe:/F2 進捗 (\d+)\/(\d+)/ },
+  { key:"F3",   stage:"全国展開 (1,741市町村)", name:"Phase F3: 全国フィルタ+分類+集計",
+    detail:"content_filter → classify_place → build_overview.xlsx。大量データでI/O待ちが主",
+    estMin:240, doneRe:/Phase F3完了/, progRe:null },
+  { key:"F4",   stage:"全国展開 (1,741市町村)", name:"Phase F4: 最終ダッシュボード公開",
+    detail:"全国版results.json生成 + GitHub Pages公開",
+    estMin:5, doneRe:/Phase F4完了/, progRe:null },
 ];
 
 function findMatch(items, re) {
@@ -269,22 +300,31 @@ function updateRoadmap(items) {
   });
   if (activeIdx < 0) activeIdx = status.findIndex(s => s.state !== "done");
 
-  el.innerHTML = PHASES.map((p, i) => {
+  let html = "", curStage = null;
+  PHASES.forEach((p, i) => {
     const s = status[i];
-    const icon = s.state === "done" ? "✅" : s.state === "running" ? "⏳" : "⏸";
+    if (p.stage !== curStage) {
+      curStage = p.stage;
+      const bg = curStage.includes("小スコープ") ? "#e8f0fa"
+               : curStage.includes("判断") ? "#fff3cd" : "#f5e8fa";
+      html += `<div style="margin:10px 0 4px; padding:4px 8px; background:${bg}; font-size:11px; font-weight:bold; border-radius:3px">${curStage}</div>`;
+    }
+    const icon = s.state === "done" ? "✅" : s.state === "running" ? "⏳" : p.manual ? "🧑" : "⏸";
     const color = s.state === "done" ? "#28a745" : s.state === "running" ? "#e6a700" : "#999";
     const sub = s.state === "running"
       ? `実行中 ${s.n}/${s.total} · 残り約 ${fmtMin(s.remainMin)}`
       : s.state === "done" ? "完了"
       : `予定 ${fmtMin(s.remainMin)}`;
-    return `<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #eee">
-      <div style="font-size:18px; width:24px">${icon}</div>
+    html += `<div style="display:flex; align-items:flex-start; gap:10px; padding:8px 4px; border-bottom:1px solid #eee">
+      <div style="font-size:18px; width:24px; padding-top:1px">${icon}</div>
       <div style="flex:1">
-        <div style="font-weight:${s.state==='running'?'bold':'normal'}">${p.name}</div>
-        <div style="font-size:11px; color:${color}">${sub}</div>
+        <div style="font-weight:${s.state==='running'?'bold':'normal'}; font-size:13px">${p.name}</div>
+        <div style="font-size:11px; color:#666; margin-top:2px">${p.detail||""}</div>
+        <div style="font-size:11px; color:${color}; margin-top:2px">${sub}</div>
       </div>
     </div>`;
-  }).join("");
+  });
+  el.innerHTML = html;
 
   const totalRemain = status.reduce((a, s) => a + s.remainMin, 0);
   const doneCount = status.filter(s => s.state === "done").length;
