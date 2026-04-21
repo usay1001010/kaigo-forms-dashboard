@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>介護帳票収集 結果ダッシュボード</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Hiragino Sans", sans-serif; margin: 0; background: #f5f6f8; color: #222; }
+  header { background: #1f3a5f; color: #fff; padding: 16px 24px; }
+  header h1 { margin: 0; font-size: 18px; }
+  header .sub { font-size: 12px; opacity: .8; margin-top: 4px; }
+  nav { background: #fff; border-bottom: 1px solid #ddd; padding: 0 24px; display: flex; gap: 4px; }
+  nav button { background: none; border: 0; padding: 12px 16px; cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent; }
+  nav button.active { border-bottom-color: #1f3a5f; font-weight: bold; }
+  main { padding: 20px 24px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: #fff; border-radius: 8px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .card .label { font-size: 11px; color: #888; }
+  .card .val { font-size: 22px; font-weight: bold; margin-top: 4px; }
+  .card .sub { font-size: 11px; color: #666; margin-top: 2px; }
+  .bar { height: 6px; background: #e5e8ec; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .bar > div { height: 100%; background: #3a7bd5; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #eee; }
+  th { background: #f0f2f5; cursor: pointer; user-select: none; position: sticky; top: 0; }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:hover td { background: #fafbfd; }
+  .search { margin-bottom: 10px; }
+  .search input { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 280px; }
+  .tag { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+  .tag.done { background: #d4edda; color: #155724; }
+  .tag.pending { background: #e5e8ec; color: #555; }
+  .tag.error { background: #f8d7da; color: #721c24; }
+  .tag.running { background: #fff3cd; color: #856404; }
+  .hidden { display: none; }
+  .muted { color: #888; }
+</style>
+</head>
+<body>
+<header>
+  <h1>介護帳票収集 結果ダッシュボード</h1>
+  <div class="sub" id="gen"></div>
+</header>
+<nav>
+  <button data-tab="summary" class="active">サマリー</button>
+  <button data-tab="forms">帳票別（210）</button>
+  <button data-tab="muni">自治体別（113）</button>
+  <button data-tab="log">作業ログ</button>
+</nav>
+<main>
+  <section id="tab-summary">
+    <div class="cards" id="cards"></div>
+    <div class="card">
+      <div class="label">カバレッジ</div>
+      <div style="margin-top:8px">帳票: <b id="cov-f"></b> <div class="bar"><div id="bar-f"></div></div></div>
+      <div style="margin-top:8px">自治体: <b id="cov-m"></b> <div class="bar"><div id="bar-m"></div></div></div>
+    </div>
+  </section>
+
+  <section id="tab-forms" class="hidden">
+    <div class="search"><input id="q-f" placeholder="帳票名・カテゴリで絞り込み"></div>
+    <table>
+      <thead><tr>
+        <th data-k="id" class="num">ID</th>
+        <th data-k="category">カテゴリ</th>
+        <th data-k="name">帳票名</th>
+        <th data-k="cover" class="num">自治体数</th>
+        <th data-k="total" class="num">ファイル数</th>
+      </tr></thead>
+      <tbody id="tb-f"></tbody>
+    </table>
+  </section>
+
+  <section id="tab-log" class="hidden">
+    <div class="card">
+      <div class="label">進捗ログ（Claude→ユーザー通信）</div>
+      <div id="log-list" style="margin-top:10px; font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.6;"></div>
+    </div>
+  </section>
+
+  <section id="tab-muni" class="hidden">
+    <div class="search"><input id="q-m" placeholder="自治体名で絞り込み"></div>
+    <table>
+      <thead><tr>
+        <th data-k="name">自治体</th>
+        <th data-k="state">状態</th>
+        <th data-k="files_downloaded" class="num">DL</th>
+        <th data-k="pages_visited" class="num">Pages</th>
+        <th data-k="accept" class="num">Accept</th>
+        <th data-k="reject" class="num">Reject</th>
+        <th data-k="forms_covered" class="num">帳票数</th>
+        <th data-k="matched_files" class="num">一致</th>
+        <th data-k="errors" class="num">Err</th>
+      </tr></thead>
+      <tbody id="tb-m"></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+let DATA = null;
+let sortF = {k:"total", dir:-1};
+let sortM = {k:"files_downloaded", dir:-1};
+
+async function load() {
+  const r = await fetch("results.json?" + Date.now());
+  DATA = await r.json();
+  render();
+}
+
+function render() {
+  const s = DATA.summary;
+  const d = new Date(DATA.generated_at * 1000);
+  document.getElementById("gen").textContent =
+    `生成: ${d.toLocaleString("ja-JP")}`;
+
+  const cards = [
+    ["帳票マスタ", s.total_forms, ""],
+    ["対象自治体", s.total_targets, ""],
+    ["収集ファイル", s.crawled_files.toLocaleString(), `${s.targets_with_files} 自治体で取得`],
+    ["Accept / Reject", `${s.accepted} / ${s.rejected}`, "内容フィルタ"],
+    ["マスタ一致", s.matched.toLocaleString(), "分類済ファイル"],
+    ["帳票カバー", `${s.forms_with_match} / ${s.total_forms}`,
+      `${(s.forms_with_match/s.total_forms*100).toFixed(1)}%`],
+    ["自治体カバー", `${s.targets_with_match} / ${s.total_targets}`,
+      `${(s.targets_with_match/s.total_targets*100).toFixed(1)}%`],
+  ];
+  document.getElementById("cards").innerHTML = cards.map(c =>
+    `<div class="card"><div class="label">${c[0]}</div>
+      <div class="val">${c[1]}</div>
+      <div class="sub">${c[2]}</div></div>`).join("");
+
+  const fP = (s.forms_with_match/s.total_forms*100).toFixed(1);
+  const mP = (s.targets_with_match/s.total_targets*100).toFixed(1);
+  document.getElementById("cov-f").textContent = `${s.forms_with_match} / ${s.total_forms} (${fP}%)`;
+  document.getElementById("cov-m").textContent = `${s.targets_with_match} / ${s.total_targets} (${mP}%)`;
+  document.getElementById("bar-f").style.width = fP + "%";
+  document.getElementById("bar-m").style.width = mP + "%";
+
+  renderForms();
+  renderMuni();
+}
+
+function renderForms() {
+  const q = document.getElementById("q-f").value.toLowerCase();
+  let rows = DATA.forms.filter(f =>
+    !q || f.name.toLowerCase().includes(q) || f.category.toLowerCase().includes(q));
+  rows.sort((a,b) => cmp(a[sortF.k], b[sortF.k]) * sortF.dir);
+  document.getElementById("tb-f").innerHTML = rows.map(f =>
+    `<tr>
+      <td class="num">${f.id}</td>
+      <td>${esc(f.category)}</td>
+      <td>${esc(f.name)}</td>
+      <td class="num">${f.cover || '<span class="muted">0</span>'}</td>
+      <td class="num">${f.total || '<span class="muted">0</span>'}</td>
+    </tr>`).join("");
+}
+
+function renderMuni() {
+  const q = document.getElementById("q-m").value.toLowerCase();
+  let rows = DATA.municipalities.filter(m =>
+    !q || m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
+  rows.sort((a,b) => cmp(a[sortM.k], b[sortM.k]) * sortM.dir);
+  document.getElementById("tb-m").innerHTML = rows.map(m => {
+    const st = m.state || "pending";
+    return `<tr>
+      <td>${esc(m.name)}<div class="muted" style="font-size:10px">${esc(m.id)}</div></td>
+      <td><span class="tag ${st}">${st}</span></td>
+      <td class="num">${m.files_downloaded}</td>
+      <td class="num">${m.pages_visited}</td>
+      <td class="num">${m.accept}</td>
+      <td class="num">${m.reject}</td>
+      <td class="num">${m.forms_covered || '<span class="muted">0</span>'}</td>
+      <td class="num">${m.matched_files || '<span class="muted">0</span>'}</td>
+      <td class="num">${m.errors || ''}</td>
+    </tr>`;
+  }).join("");
+}
+
+function cmp(a,b) {
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return String(a).localeCompare(String(b), "ja");
+}
+function esc(s) {
+  return String(s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+document.querySelectorAll("nav button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("nav button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    ["summary","forms","muni"].forEach(t =>
+      document.getElementById("tab-"+t).classList.toggle("hidden", t !== b.dataset.tab));
+  };
+});
+
+document.querySelectorAll("#tab-forms th[data-k]").forEach(th => {
+  th.onclick = () => {
+    const k = th.dataset.k;
+    sortF = { k, dir: sortF.k === k ? -sortF.dir : (typeof DATA.forms[0][k] === "number" ? -1 : 1) };
+    renderForms();
+  };
+});
+document.querySelectorAll("#tab-muni th[data-k]").forEach(th => {
+  th.onclick = () => {
+    const k = th.dataset.k;
+    sortM = { k, dir: sortM.k === k ? -sortM.dir : (typeof DATA.municipalities[0][k] === "number" ? -1 : 1) };
+    renderMuni();
+  };
+});
+document.getElementById("q-f").oninput = renderForms;
+document.getElementById("q-m").oninput = renderMuni;
+
+async function loadNotes() {
+  try {
+    const r = await fetch("notes.jsonl?" + Date.now());
+    if (!r.ok) return;
+    const txt = await r.text();
+    const items = txt.trim().split("\n").filter(Boolean).map(JSON.parse);
+    items.reverse();
+    document.getElementById("log-list").innerHTML = items.map(x =>
+      `<div style="padding:6px 0; border-bottom:1px solid #eee">
+        <span class="muted">${x.ts}</span>
+        <span class="tag ${x.level||'done'}" style="margin-left:6px">${x.level||'info'}</span>
+        <div style="margin-top:3px; white-space: pre-wrap">${esc(x.msg)}</div>
+      </div>`).join("") || '<div class="muted">(ログなし)</div>';
+  } catch(e) {}
+}
+
+load();
+loadNotes();
+setInterval(load, 30000);
+setInterval(loadNotes, 15000);
+</script>
+</body>
+</html>
