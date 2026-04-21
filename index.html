@@ -40,6 +40,7 @@
 <header>
   <h1>介護帳票収集 結果ダッシュボード</h1>
   <div class="sub" id="gen"></div>
+  <div id="eta" style="margin-top:6px; font-size:13px; background:rgba(255,255,255,.12); padding:6px 10px; border-radius:4px; display:none"></div>
 </header>
 <nav>
   <button data-tab="summary" class="active">サマリー</button>
@@ -211,12 +212,55 @@ document.querySelectorAll("#tab-muni th[data-k]").forEach(th => {
 document.getElementById("q-f").oninput = renderForms;
 document.getElementById("q-m").oninput = renderMuni;
 
+function updateETA(items) {
+  const el = document.getElementById("eta");
+  // find latest C0 進捗 N/M line
+  const re = /C0 進捗 (\d+)\/(\d+)/;
+  let latest = null, first = null;
+  for (const it of items) {
+    const m = (it.msg||"").match(re);
+    if (m) {
+      const e = { n: +m[1], total: +m[2], ts: new Date(it.ts.replace(" ","T")+":00").getTime() };
+      if (!first) first = e;
+      latest = e;
+    }
+  }
+  // check if done
+  const doneLine = items.find(x => /Phase C0完了/.test(x.msg||""));
+  if (doneLine) {
+    el.style.display = "block";
+    el.textContent = "✅ Phase C0 完了: " + doneLine.msg;
+    return;
+  }
+  if (!latest || !first || latest.n === first.n) {
+    if (latest) {
+      el.style.display = "block";
+      el.textContent = `⏳ Phase C0 実行中: ${latest.n}/${latest.total} 完了 (ETA計算中...)`;
+    }
+    return;
+  }
+  const elapsedMs = latest.ts - first.ts;
+  const done = latest.n - first.n;
+  const rate = elapsedMs / done; // ms per target
+  const remain = latest.total - latest.n;
+  const remainMs = remain * rate;
+  const now = Date.now();
+  const sinceLastMs = now - latest.ts;
+  const adjRemain = Math.max(0, remainMs - sinceLastMs);
+  const mins = Math.round(adjRemain / 60000);
+  const h = Math.floor(mins / 60), mm = mins % 60;
+  const etaStr = h > 0 ? `${h}時間${mm}分` : `${mm}分`;
+  el.style.display = "block";
+  el.innerHTML = `⏳ Phase C0 実行中: <b>${latest.n}/${latest.total}</b> 完了 / 残り約 <b>${etaStr}</b> / 1件あたり ${(rate/1000).toFixed(1)}秒`;
+}
+
 async function loadNotes() {
   try {
     const r = await fetch("notes.jsonl?" + Date.now());
     if (!r.ok) return;
     const txt = await r.text();
     const items = txt.trim().split("\n").filter(Boolean).map(JSON.parse);
+    updateETA(items);
     items.reverse();
     document.getElementById("log-list").innerHTML = items.map(x =>
       `<div style="padding:6px 0; border-bottom:1px solid #eee">
