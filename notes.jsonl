@@ -1,3 +1,11 @@
 {"ts":"2026-04-22 01:10","level":"done","msg":"ダッシュボード初期化 / results.json生成 / サマリー: 帳票カバー 18/210 (8.6%), 自治体カバー 14/113 (12.4%)"}
 {"ts":"2026-04-22 01:12","level":"done","msg":"GitHub Pagesデプロイ完了 → https://usay1001010.github.io/kaigo-forms-dashboard/ （反映まで1-2分）"}
 {"ts":"2026-04-22 01:13","level":"running","msg":"Phase C0 (seed_enrichment) 着手: 79ゼロ件自治体のseed URLをDuckDuckGoで再探索する"}
+{"ts": "2026-04-22 01:12", "level": "running", "msg": "Phase C0: 対象 79 自治体でDuckDuckGo探索開始"}
+{"ts": "2026-04-22 01:12", "level": "running", "msg": "C0 進捗 5/79 / 累計候補URL 10 / エラー 0"}
+{"ts": "2026-04-22 01:13", "level": "running", "msg": "C0 進捗 10/79 / 累計候補URL 10 / エラー 0"}
+{"ts": "2026-04-22 01:14", "level": "running", "msg": "C0 進捗 15/79 / 累計候補URL 10 / エラー 0"}
+{"ts": "2026-04-22 01:14", "level": "running", "msg": "C0 進捗 20/79 / 累計候補URL 10 / エラー 3"}
+{"ts": "2026-04-22 01:14", "level": "running", "msg": "C0 進捗 25/79 / 累計候補URL 10 / エラー 8"}
+{"ts": "2026-04-22 01:14", "level": "running", "msg": "C0 進捗 30/79 / 累計候補URL 10 / エラー 13"}
+{"ts": "2026-04-22 01:14", "level": "running", "msg": "C0 進捗 35/79 / 累計候補URL 10 / エラー 18"}
