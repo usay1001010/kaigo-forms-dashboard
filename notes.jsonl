@@ -29,3 +29,6 @@
 {"ts": "2026-04-22 02:22", "level": "done", "msg": "Phase E3完了: files_index.jsonl (299件) + 両レポート生成 / 帳票18種 × 事業所24種"}
 {"ts": "2026-04-22 02:23", "level": "done", "msg": "Phase E2完了: output_帳票リスト_new/ 構築 / 共通帳票 233件 / 事業所別 979件 / マスタ補完 48件 / 配置ファイル 299件"}
 {"ts": "2026-04-22 02:24", "level": "done", "msg": "Phase E3完了: files_index.jsonl (299件) + 両レポート生成 / 帳票18種 × 事業所24種"}
+{"ts": "2026-04-22 04:38", "level": "done", "msg": "Phase F完了: 精密フィルタ再適用 / accept 527 / reject 934 / processed 1461"}
+{"ts": "2026-04-22 04:38", "level": "done", "msg": "Phase CL完了: 帳票分類再適用 / matched 297 / unmatched 230 / accepted 527"}
+{"ts": "2026-04-22 04:38", "level": "done", "msg": "Phase D完了: ダッシュボード再生成 / forms_with_match 18 / targets_with_match 14"}
