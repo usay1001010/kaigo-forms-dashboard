@@ -19,7 +19,20 @@
   .card .val { font-size: 22px; font-weight: bold; margin-top: 4px; }
   .card .sub { font-size: 11px; color: #666; margin-top: 2px; }
   .bar { height: 6px; background: #e5e8ec; border-radius: 3px; margin-top: 8px; overflow: hidden; }
-  .bar > div { height: 100%; background: #3a7bd5; }
+  .bar > div { height: 100%; background: #3a7bd5; transition: width .4s; }
+  .bar.sm { height: 4px; }
+  .bar.done > div { background: #28a745; }
+  .bar.running > div { background: #e6a700; }
+  .bar.indet { position: relative; }
+  .bar.indet > div { width: 30% !important; background: #e6a700; animation: indet 1.4s infinite; }
+  @keyframes indet { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+  .stage-head { margin:14px 0 6px; padding:6px 10px; font-size:12px; font-weight:bold; border-radius:4px; }
+  .phase-row { display:flex; align-items:flex-start; gap:10px; padding:10px 4px; border-bottom:1px solid #eee; }
+  .phase-row .ico { font-size:18px; width:24px; padding-top:1px; }
+  .phase-row .body { flex:1; min-width:0; }
+  .phase-row .title { font-size:13px; }
+  .phase-row .detail { font-size:11px; color:#666; margin-top:2px; }
+  .phase-row .meta { font-size:11px; margin-top:3px; display:flex; justify-content:space-between; gap:8px; }
   table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; font-size: 13px; }
   th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #eee; }
   th { background: #f0f2f5; cursor: pointer; user-select: none; position: sticky; top: 0; }
@@ -45,6 +58,7 @@
   <button data-tab="summary" class="active">サマリー</button>
   <button data-tab="forms">帳票別（210）</button>
   <button data-tab="muni">自治体別（113）</button>
+  <button data-tab="action">アクション</button>
   <button data-tab="log">ログ</button>
 </nav>
 <main>
@@ -89,6 +103,21 @@
     </table>
   </section>
 
+  <section id="tab-action" class="hidden">
+    <div class="card" style="margin-bottom:14px">
+      <div class="label">全体進捗</div>
+      <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:6px">
+        <div><b id="ov-done">0</b> / <b id="ov-total">0</b> タスク完了</div>
+        <div class="muted" id="ov-eta"></div>
+      </div>
+      <div class="bar" style="height:10px; margin-top:8px"><div id="ov-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">アクション（全フェーズ）</div>
+      <div id="actions" style="margin-top:6px"></div>
+    </div>
+  </section>
+
   <section id="tab-log" class="hidden">
     <div class="search">
       <select id="log-level" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px">
@@ -119,6 +148,135 @@ let sortM = {k:"files_downloaded", dir:-1};
 const LEVEL_ORDER = {error:3, warn:2, done:1, info:0};
 const LEVEL_COLOR = {error:"error", warn:"running", done:"done", info:"pending"};
 
+const PHASES = [
+  { key:"C0", stage:"小スコープ (113自治体)", name:"Phase C0: seed URL拡充 (ゼロ件自治体にDDG探索)",
+    detail:"site:domain 介護保険 様式 の3クエリで候補URL収集 → seeds_enriched.json",
+    estMin:45, doneRe:/Phase C0完了/, progRe:/C0 進捗 (\d+)\/(\d+)/ },
+  { key:"C1", stage:"小スコープ (113自治体)", name:"Phase C1: 拡充seedで再クロール",
+    detail:"crawler_v2.py を seeds_enriched.json から再実行 / BFS depth2 + 精度フィルタ",
+    estMin:60, doneRe:/Phase C1完了/, progRe:/C1 進捗 (\d+)\/(\d+)/ },
+  { key:"F",  stage:"小スコープ (113自治体)", name:"content_filter 再適用",
+    detail:"除外語+帳票マスタ部分一致+キーワードスコア(th=3) でノイズ除去",
+    estMin:5, doneRe:/filter再適用完了/, progRe:null },
+  { key:"CL", stage:"小スコープ (113自治体)", name:"classify_place 再適用 (マスタ照合)",
+    detail:"210帳票マスタへのマッチング・自治体×帳票マトリクス更新",
+    estMin:10, doneRe:/classify再適用完了/, progRe:null },
+  { key:"D",  stage:"小スコープ (113自治体)", name:"ダッシュボード rebuild + push",
+    detail:"build_dashboard_data.py → results.json → GitHub Pages",
+    estMin:2, doneRe:/ダッシュボード再生成完了/, progRe:null },
+  { key:"E0", stage:"小スコープ (113自治体)", name:"Phase E0: 帳票マスタ更新 (13施設種別xlsx解析)",
+    detail:"帳票リスト_newest.xlsx → forms_master_v3.csv + form_hierarchy.json + form_tags.json",
+    estMin:30, doneRe:/Phase E0完了/, progRe:null },
+  { key:"E1", stage:"小スコープ (113自治体)", name:"Phase E1: output_市町村-県/ 構築",
+    detail:"都道府県/市町村ごとに帳票名フォルダで再配置",
+    estMin:15, doneRe:/Phase E1完了/, progRe:null },
+  { key:"E2", stage:"小スコープ (113自治体)", name:"Phase E2: output_帳票リスト_new/ 構築",
+    detail:"事業所→大区分→帳票 階層で配置。_meta.jsonでタグ付け",
+    estMin:35, doneRe:/Phase E2完了/, progRe:null },
+  { key:"E3", stage:"小スコープ (113自治体)", name:"Phase E3: files_index.jsonl + レポート",
+    detail:"帳票×事業所タグ付き索引。将来の検索SSOT",
+    estMin:20, doneRe:/Phase E3完了/, progRe:null },
+  { key:"GATE", stage:"判断ゲート", name:"🧑‍⚖️ 目視レビュー (ユーザー確認)",
+    detail:"113自治体の結果を確認。OKなら全国展開へ、NGならフィルタ調整ループ",
+    estMin:60, doneRe:/目視レビューOK/, progRe:null, manual:true },
+  { key:"F0", stage:"全国展開 (1,741市町村)", name:"Phase F0: 全国市町村ターゲット生成",
+    detail:"総務省市区町村コードから1,741件の {id,name,domain} を生成",
+    estMin:180, doneRe:/Phase F0完了/, progRe:/F0 進捗 (\d+)\/(\d+)/ },
+  { key:"F1", stage:"全国展開 (1,741市町村)", name:"Phase F1: 全国seed収集 (DDG一括)",
+    detail:"1,741市町村に DDG探索。2.5秒/req × 並列3",
+    estMin:360, doneRe:/Phase F1完了/, progRe:/F1 進捗 (\d+)\/(\d+)/ },
+  { key:"F2", stage:"全国展開 (1,741市町村)", name:"Phase F2: 全国クロール実行",
+    detail:"crawler_v2.py を1,741市町村で並列実行 (8ワーカー)。平均3-5分/件 → 約1週間",
+    estMin:10080, doneRe:/Phase F2完了/, progRe:/F2 進捗 (\d+)\/(\d+)/ },
+  { key:"F3", stage:"全国展開 (1,741市町村)", name:"Phase F3: 全国フィルタ+分類+集計",
+    detail:"content_filter → classify_place → build_overview.xlsx",
+    estMin:240, doneRe:/Phase F3完了/, progRe:null },
+  { key:"F4", stage:"全国展開 (1,741市町村)", name:"Phase F4: 最終ダッシュボード公開",
+    detail:"全国版results.json生成 + GitHub Pages公開",
+    estMin:5, doneRe:/Phase F4完了/, progRe:null },
+];
+
+function fmtMin(mins) {
+  mins = Math.max(0, Math.round(mins));
+  if (mins < 60) return mins + "分";
+  const h = Math.floor(mins/60), mm = mins%60;
+  return mm ? `${h}時間${mm}分` : `${h}時間`;
+}
+
+function phaseStatus(p, items) {
+  if (items.find(it => p.doneRe.test(it.msg||""))) return { state:"done", pct:100 };
+  if (p.progRe) {
+    let first=null, latest=null;
+    for (const it of items) {
+      const m = (it.msg||"").match(p.progRe);
+      if (m) {
+        const e = { n:+m[1], total:+m[2], ts:new Date((it.ts||"").replace(" ","T")+":00").getTime() };
+        if (!first) first = e;
+        latest = e;
+      }
+    }
+    if (latest) {
+      const pct = latest.total ? (latest.n/latest.total*100) : 0;
+      let remainMin = p.estMin;
+      if (first && latest.n > first.n) {
+        const rate = (latest.ts - first.ts) / (latest.n - first.n);
+        remainMin = ((latest.total - latest.n) * rate) / 60000;
+      }
+      return { state:"running", pct, n:latest.n, total:latest.total, remainMin };
+    }
+  }
+  return { state:"pending", pct:0 };
+}
+
+function renderActions() {
+  const items = NOTES.slice().reverse();
+  const states = PHASES.map(p => phaseStatus(p, items));
+  const done = states.filter(s => s.state==="done").length;
+  const total = PHASES.length;
+  const overallPct = states.reduce((a,s)=>a+s.pct,0) / total;
+  document.getElementById("ov-done").textContent = done;
+  document.getElementById("ov-total").textContent = total;
+  document.getElementById("ov-bar").style.width = overallPct.toFixed(1) + "%";
+  const remainTotal = states.reduce((a,s,i)=>{
+    if (s.state==="done") return a;
+    if (s.state==="running") return a + (s.remainMin ?? PHASES[i].estMin);
+    return a + PHASES[i].estMin;
+  }, 0);
+  const eta = new Date(Date.now() + remainTotal*60000);
+  document.getElementById("ov-eta").textContent =
+    `残り ${fmtMin(remainTotal)} · 全完了予定 ${eta.toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}`;
+
+  let html = "", curStage = null;
+  PHASES.forEach((p, i) => {
+    const s = states[i];
+    if (p.stage !== curStage) {
+      curStage = p.stage;
+      const bg = curStage.includes("小スコープ") ? "#e8f0fa"
+               : curStage.includes("判断") ? "#fff3cd" : "#f5e8fa";
+      html += `<div class="stage-head" style="background:${bg}">${esc(curStage)}</div>`;
+    }
+    const ico = s.state==="done" ? "✅" : s.state==="running" ? "⏳" : p.manual ? "🧑" : "⏸";
+    const barCls = "bar sm " + (s.state==="done"?"done":s.state==="running"?"running":"");
+    const metaL = s.state==="running"
+        ? `実行中 ${s.n}/${s.total} (${s.pct.toFixed(1)}%)`
+        : s.state==="done" ? "完了"
+        : p.manual ? "手動ステップ" : "未着手";
+    const metaR = s.state==="done" ? "—"
+        : s.state==="running" ? `残り約 ${fmtMin(s.remainMin ?? p.estMin)}`
+        : `予定 ${fmtMin(p.estMin)}`;
+    html += `<div class="phase-row">
+      <div class="ico">${ico}</div>
+      <div class="body">
+        <div class="title" style="font-weight:${s.state==='running'?'bold':'normal'}">${esc(p.name)}</div>
+        <div class="detail">${esc(p.detail||"")}</div>
+        <div class="${barCls}"><div style="width:${s.pct.toFixed(1)}%"></div></div>
+        <div class="meta"><span class="muted">${metaL}</span><span class="muted">${metaR}</span></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById("actions").innerHTML = html;
+}
+
 async function load() {
   const r = await fetch("results.json?" + Date.now());
   DATA = await r.json();
@@ -134,6 +292,7 @@ async function loadNotes() {
       try { return JSON.parse(l); } catch { return null; }
     }).filter(Boolean).reverse();
     renderLog();
+    renderActions();
   } catch(e) {}
 }
 
@@ -240,7 +399,7 @@ document.querySelectorAll("nav button").forEach(b => {
   b.onclick = () => {
     document.querySelectorAll("nav button").forEach(x => x.classList.remove("active"));
     b.classList.add("active");
-    ["summary","forms","muni","log"].forEach(t =>
+    ["summary","forms","muni","action","log"].forEach(t =>
       document.getElementById("tab-"+t).classList.toggle("hidden", t !== b.dataset.tab));
   };
 });
