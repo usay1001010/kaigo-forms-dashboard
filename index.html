@@ -326,11 +326,15 @@ function updateRoadmap(items) {
   });
   el.innerHTML = html;
 
-  const totalRemain = status.reduce((a, s) => a + s.remainMin, 0);
+  const sumStage = (label) => status.filter((_,i) => PHASES[i].stage===label).reduce((a,s)=>a+s.remainMin,0);
+  const s1 = sumStage("小スコープ (113自治体)");
+  const gate = sumStage("判断ゲート");
+  const s2 = sumStage("全国展開 (1,741市町村)");
+  const totalRemain = s1 + gate + s2;
   const doneCount = status.filter(s => s.state === "done").length;
   const eta = new Date(Date.now() + totalRemain*60000);
   document.getElementById("roadmap-total").innerHTML =
-    `完了: <b>${doneCount}/${PHASES.length}</b> · 残り合計 <b>${fmtMin(totalRemain)}</b> · 完了予定 <b>${eta.toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</b>`;
+    `完了: <b>${doneCount}/${PHASES.length}</b> · 小スコープ残り <b>${fmtMin(s1)}</b> + ゲート <b>${fmtMin(gate)}</b> + 全国展開 <b>${fmtMin(s2)}</b> = 合計 <b>${fmtMin(totalRemain)}</b> · 全完了予定 <b>${eta.toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</b>`;
 }
 
 function updateETA(items) {
