@@ -54,3 +54,24 @@
 {"ts": "2026-04-22 23:10", "level": "done", "msg": "Phase E2完了(命名刷新): output_帳票リスト_new/ 構築 / 共通帳票 233件 / 事業所別 979件 / マスタ補完 71件 / 配置ファイル 484件"}
 {"ts": "2026-04-22 23:10", "level": "done", "msg": "Phase E3完了: files_index.jsonl (484件) + 両レポート生成 / 帳票35種 × 事業所24種"}
 {"ts": "2026-04-22 23:11", "level": "done", "msg": "Phase CL5: フィルタ強化(麻しん/プレスリリース除外)+マスタv2/v3に政府様式11件追加(224-234)+第N号様式逆順パターン対応。matched 413→482 (+69) / unmatched 114→50 (-64) / 帳票31→35種"}
+{"ts":"2026-04-23 13:33","level":"done","msg":"dashboard push完了 https://usay1001010.github.io/kaigo-forms-dashboard/"}
+{"ts": "2026-04-23 13:50", "level": "running", "msg": "Phase C0-v3a: HTML探索で 68 自治体を処理"}
+{"ts": "2026-04-23 13:50", "level": "running", "msg": "C0-v3a 進捗 5/68 / 成功 2 / 累計URL 40"}
+{"ts": "2026-04-23 13:50", "level": "running", "msg": "C0-v3a 進捗 10/68 / 成功 5 / 累計URL 100"}
+{"ts": "2026-04-23 13:51", "level": "running", "msg": "C0-v3a 進捗 15/68 / 成功 8 / 累計URL 145"}
+{"ts": "2026-04-23 13:51", "level": "running", "msg": "C0-v3a 進捗 20/68 / 成功 10 / 累計URL 185"}
+{"ts": "2026-04-23 13:51", "level": "running", "msg": "C0-v3a 進捗 25/68 / 成功 13 / 累計URL 245"}
+{"ts": "2026-04-23 13:51", "level": "running", "msg": "C0-v3a 進捗 30/68 / 成功 16 / 累計URL 298"}
+{"ts": "2026-04-23 13:51", "level": "running", "msg": "C0-v3a 進捗 35/68 / 成功 18 / 累計URL 338"}
+{"ts": "2026-04-23 13:52", "level": "running", "msg": "C0-v3a 進捗 40/68 / 成功 22 / 累計URL 418"}
+{"ts": "2026-04-23 13:52", "level": "running", "msg": "C0-v3a 進捗 45/68 / 成功 27 / 累計URL 518"}
+{"ts": "2026-04-23 13:52", "level": "running", "msg": "C0-v3a 進捗 50/68 / 成功 32 / 累計URL 618"}
+{"ts": "2026-04-23 13:53", "level": "running", "msg": "C0-v3a 進捗 55/68 / 成功 36 / 累計URL 698"}
+{"ts": "2026-04-23 13:53", "level": "running", "msg": "C0-v3a 進捗 60/68 / 成功 41 / 累計URL 797"}
+{"ts": "2026-04-23 13:54", "level": "running", "msg": "C0-v3a 進捗 65/68 / 成功 45 / 累計URL 877"}
+{"ts": "2026-04-23 13:54", "level": "running", "msg": "C0-v3a 進捗 68/68 / 成功 47 / 累計URL 917"}
+{"ts": "2026-04-23 13:54", "level": "done", "msg": "Phase C0-v3a完了: 47/68 自治体, 合計 917 URL"}
+{"ts": "2026-04-23 14:05", "level": "done", "msg": "C0-v3 seed merge: 47自治体更新 / checkpoint除外 47件 / done残 66"}
+{"ts": "2026-04-23 17:18", "level": "done", "msg": "Phase E1完了(命名刷新): output_市町村-県/ 構築 / スケルトン 26442 / 分類済 1872 / 未マッチ 665"}
+{"ts": "2026-04-23 17:18", "level": "done", "msg": "Phase E2完了(命名刷新): output_帳票リスト_new/ 構築 / 共通帳票 233件 / 事業所別 979件 / マスタ補完 71件 / 配置ファイル 1876件"}
+{"ts": "2026-04-23 17:18", "level": "done", "msg": "Phase E3完了: files_index.jsonl (1876件) + 両レポート生成 / 帳票55種 × 事業所24種"}
