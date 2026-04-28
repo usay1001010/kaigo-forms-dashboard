@@ -3956,13 +3956,13 @@
     }
   ],
   "phase_f3": {
-    "generated_at": "2026-04-28 22:07",
-    "total_files": 12385,
-    "matched_files": 990,
-    "effective_covered": 25,
+    "generated_at": "2026-04-28 22:31",
+    "total_files": 16371,
+    "matched_files": 1195,
+    "effective_covered": 27,
     "effective_total": 70,
-    "coverage_pct": 35.7,
-    "target_dirs": 900
+    "coverage_pct": 38.6,
+    "target_dirs": 1154
   },
   "phase_f4": {
     "generated_at": "2026-04-28 22:07",
