@@ -3956,12 +3956,182 @@
     }
   ],
   "phase_f3": {
-    "generated_at": "2026-04-28 21:17",
-    "total_files": 3946,
-    "matched_files": 6,
-    "effective_covered": 3,
+    "generated_at": "2026-04-28 22:04",
+    "total_files": 11309,
+    "matched_files": 641,
+    "effective_covered": 23,
     "effective_total": 70,
-    "coverage_pct": 4.3,
-    "target_dirs": 258
+    "coverage_pct": 32.9,
+    "target_dirs": 852
+  },
+  "phase_f4": {
+    "generated_at": "2026-04-28 22:04",
+    "national_crawl": {
+      "total_targets": 852,
+      "total_files": 11309,
+      "matched_files": 641,
+      "match_rate": 5.7
+    },
+    "coverage": {
+      "mhlw_covered": 15,
+      "mhlw_total": 45,
+      "municipal_covered": 8,
+      "municipal_total": 25,
+      "effective_covered": 23,
+      "effective_total": 70,
+      "coverage_pct": 32.9
+    },
+    "pref_stats": {
+      "兵庫県": {
+        "targets": 1,
+        "files": 7,
+        "covered_forms": 1
+      },
+      "青森県": {
+        "targets": 5,
+        "files": 300,
+        "covered_forms": 5
+      },
+      "福井県": {
+        "targets": 3,
+        "files": 203,
+        "covered_forms": 5
+      },
+      "北海道": {
+        "targets": 15,
+        "files": 691,
+        "covered_forms": 15
+      },
+      "岩手県": {
+        "targets": 5,
+        "files": 355,
+        "covered_forms": 3
+      },
+      "宮城県": {
+        "targets": 4,
+        "files": 309,
+        "covered_forms": 7
+      },
+      "秋田県": {
+        "targets": 2,
+        "files": 31,
+        "covered_forms": 3
+      },
+      "山形県": {
+        "targets": 1,
+        "files": 11,
+        "covered_forms": 1
+      },
+      "茨城県": {
+        "targets": 1,
+        "files": 8,
+        "covered_forms": 1
+      },
+      "栃木県": {
+        "targets": 3,
+        "files": 247,
+        "covered_forms": 11
+      },
+      "群馬県": {
+        "targets": 5,
+        "files": 285,
+        "covered_forms": 6
+      },
+      "埼玉県": {
+        "targets": 5,
+        "files": 159,
+        "covered_forms": 3
+      },
+      "千葉県": {
+        "targets": 6,
+        "files": 392,
+        "covered_forms": 10
+      },
+      "東京都": {
+        "targets": 1,
+        "files": 78,
+        "covered_forms": 2
+      },
+      "神奈川県": {
+        "targets": 5,
+        "files": 407,
+        "covered_forms": 8
+      },
+      "新潟県": {
+        "targets": 2,
+        "files": 114,
+        "covered_forms": 5
+      },
+      "石川県": {
+        "targets": 1,
+        "files": 34,
+        "covered_forms": 5
+      },
+      "山梨県": {
+        "targets": 4,
+        "files": 194,
+        "covered_forms": 7
+      },
+      "長野県": {
+        "targets": 6,
+        "files": 198,
+        "covered_forms": 8
+      },
+      "岐阜県": {
+        "targets": 2,
+        "files": 200,
+        "covered_forms": 6
+      },
+      "静岡県": {
+        "targets": 2,
+        "files": 200,
+        "covered_forms": 8
+      },
+      "愛知県": {
+        "targets": 4,
+        "files": 82,
+        "covered_forms": 3
+      },
+      "三重県": {
+        "targets": 4,
+        "files": 333,
+        "covered_forms": 6
+      },
+      "滋賀県": {
+        "targets": 2,
+        "files": 71,
+        "covered_forms": 4
+      },
+      "京都府": {
+        "targets": 2,
+        "files": 52,
+        "covered_forms": 2
+      },
+      "大阪府": {
+        "targets": 10,
+        "files": 317,
+        "covered_forms": 5
+      },
+      "島根県": {
+        "targets": 1,
+        "files": 16,
+        "covered_forms": 1
+      },
+      "鳥取県": {
+        "targets": 1,
+        "files": 14,
+        "covered_forms": 3
+      },
+      "富山県": {
+        "targets": 1,
+        "files": 73,
+        "covered_forms": 2
+      },
+      "和歌山県": {
+        "targets": 1,
+        "files": 64,
+        "covered_forms": 2
+      }
+    }
   }
 }
